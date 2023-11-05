@@ -9,9 +9,8 @@ const cors = require("cors");
 app.use(express.json());
 app.use(cors());
 app.use(morgan("tiny"));
-app.use(unkownEndpoint);
-app.use(reqLogger);
-app.use("dist");
+app.use(reqLogger); // Request logger should be one of the first middlewares
+app.use(express.static("dist"));
 
 function reqLogger(req, res, next) {
   console.log("Method:", req.method);
@@ -21,7 +20,7 @@ function reqLogger(req, res, next) {
   next();
 }
 
-function unkownEndpoint(req, res) {
+function unknownEndpoint(req, res) {
   res.status(404).send({ error: "unknown endpoint" });
 }
 
@@ -102,6 +101,8 @@ app.post(`${baseURL}`, (req, res) => {
   console.log(persons);
   res.json(person);
 });
+
+app.use(unknownEndpoint);
 
 const PORT = process.env.PORT || 3001;
 app.listen(PORT, () => {
