@@ -1,17 +1,16 @@
 const express = require("express");
 const app = express();
-const PORT = 3001;
 const baseURL = "/api/persons";
 const requiredProperties = ["name", "number"];
 const morgan = require("morgan");
 // const { v4: uuidv4 } = require("uuid");
-// const cors = require("cors");
+const cors = require("cors");
 
 app.use(express.json());
-// app.use(cors());
+app.use(cors());
 app.use(morgan("tiny"));
-// app.use(unkownEndpoint);
-// app.use(reqLogger);
+app.use(unkownEndpoint);
+app.use(reqLogger);
 
 function reqLogger(req, res, next) {
   console.log("Method:", req.method);
@@ -113,4 +112,7 @@ app.post(`${baseURL}`, (req, res) => {
   res.json(person);
 });
 
-app.listen(PORT, () => console.log(`Server is running on port ${PORT}`));
+const PORT = process.env.PORT || 3001;
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
+});
