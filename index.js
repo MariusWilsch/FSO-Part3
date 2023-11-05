@@ -3,7 +3,7 @@ const app = express();
 const baseURL = "/api/persons";
 const requiredProperties = ["name", "number"];
 const morgan = require("morgan");
-// const { v4: uuidv4 } = require("uuid");
+const { v4: uuidv4 } = require("uuid");
 const cors = require("cors");
 
 app.use(express.json());
@@ -11,6 +11,7 @@ app.use(cors());
 app.use(morgan("tiny"));
 app.use(unkownEndpoint);
 app.use(reqLogger);
+app.use("dist");
 
 function reqLogger(req, res, next) {
   console.log("Method:", req.method);
@@ -76,16 +77,6 @@ app.delete(`${baseURL}/:id`, (req, res) => {
   prevLen !== persons.length ? res.status(204).end() : res.status(404).end();
 });
 
-function generateID() {
-  // Find the current maximum ID
-  const maxId =
-    persons.length > 0 ? Math.max(...persons.map((person) => person.id)) : 0;
-  // Generate a random number that's big enough to likely avoid duplicates
-  const randomLargeNumber = Math.floor(Math.random() * 1000000);
-  // Combine the two to get a new unique ID
-  return maxId + randomLargeNumber;
-}
-
 app.post(`${baseURL}`, (req, res) => {
   const body = req.body;
 
@@ -102,7 +93,7 @@ app.post(`${baseURL}`, (req, res) => {
     return res.status(400).json({ error: "name must be unique" });
 
   const person = {
-    id: generateID(),
+    id: uuidv4(),
     name: body.name,
     number: body.number,
   };
