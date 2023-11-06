@@ -26,37 +26,27 @@ function unknownEndpoint(req, res) {
   res.status(404).send({ error: "unknown endpoint" });
 }
 
-// let persons = [
-//   {
-//     id: 1,
-//     name: "Arto Hellas",
-//     number: "040-123456",
-//   },
-//   {
-//     id: 2,
-//     name: "Ada Lovelace",
-//     number: "39-44-5323523",
-//   },
-//   {
-//     id: 3,
-//     name: "Dan Abramov",
-//     number: "12-43-234345",
-//   },
-//   {
-//     id: 4,
-//     name: "Mary Poppendieck",
-//     number: "39-23-6423122",
-//   },
-// ];
+const errHandler = (err, req, res, next) => {
+  console.log(err);
 
-app.get(baseURL, (req, res) => {
-  Person.find({}).then((notes) => {
-    res.json(notes);
-  });
+  if (err.name === "CastError")
+    return res.status(400).send({ error: "malformatted id" });
+  if (err.name === "ValidationError")
+    return res.status(400).send({ error: err.message });
+
+  next(err);
+};
+
+app.get(baseURL, (req, res, next) => {
+  Person.find({})
+    .then((notes) => res.json(notes))
+    .catch((err) => next(err));
 });
 
-app.get(`${baseURL}/:id`, (req, res) => {
-  Person.findById(req.params.id).then((person) => res.json(person));
+app.get(`${baseURL}/:id`, (req, res, next) => {
+  Person.findById(req.params.id)
+    .then((person) => res.json(person))
+    .catch((err) => next(err));
 });
 
 // app.get("/info", (req, res) => {
@@ -71,16 +61,13 @@ app.get(`${baseURL}/:id`, (req, res) => {
 //   res.send(htmlRes);
 // });
 
-app.delete(`${baseURL}/:id`, (req, res) => {
-  Person.findByIdAndRemove(req.params.id)
-    .then((result) => (result ? res.status(204).end : res.status(404).end()))
-    .catch((err) => {
-      console.log(err);
-      res.status(400).send({ error: "malformatted id" });
-    });
+app.delete(`${baseURL}/:id`, (req, res, next) => {
+  Person.findByIdAndDelete(req.params.id)
+    .then((result) => (result ? res.status(204).end() : res.status(404).end()))
+    .catch((err) => next(err));
 });
 
-app.post(`${baseURL}`, (req, res) => {
+app.post(`${baseURL}`, (req, res, next) => {
   const body = req.body;
 
   const missingProperties = requiredProperties.filter(
@@ -96,10 +83,14 @@ app.post(`${baseURL}`, (req, res) => {
     name: body.name,
     number: body.number,
   });
-  person.save().then((savedPerson) => res.json(savedPerson));
+  person
+    .save()
+    .then((savedPerson) => res.json(savedPerson))
+    .catch((err) => next(err));
 });
 
 app.use(unknownEndpoint);
+app.use(errHandler);
 
 const PORT = process.env.PORT;
 app.listen(PORT, () => {
