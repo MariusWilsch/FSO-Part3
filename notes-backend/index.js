@@ -14,8 +14,8 @@ const unknownEndpoint = (request, response) => {
   response.status(404).send({ error: "unknown endpoint" });
 };
 
-app.use(express.json());
 app.use(cors());
+app.use(express.json());
 app.use(requestLogger);
 app.use(express.static("dist"));
 
@@ -75,7 +75,11 @@ app.get("/api/notes/:id", (request, response) => {
   const id = Number(request.params.id);
   const note = notes.find((note) => note.id === id);
 
-  note ? response.json(note) : response.status(404).end();
+  if (note) {
+    response.json(note);
+  } else {
+    response.status(404).end();
+  }
 
   response.json(note);
 });
