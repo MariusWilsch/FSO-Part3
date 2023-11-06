@@ -1,8 +1,9 @@
+require("dotenv").config();
 const express = require("express");
 const app = express();
 const cors = require("cors");
 const morgan = require("morgan");
-const { v4: uuidv4 } = require("uuid");
+const Person = require("./models/personDB");
 
 const baseURL = "/api/persons";
 const requiredProperties = ["name", "number"];
@@ -25,56 +26,58 @@ function unknownEndpoint(req, res) {
   res.status(404).send({ error: "unknown endpoint" });
 }
 
-let persons = [
-  {
-    id: 1,
-    name: "Arto Hellas",
-    number: "040-123456",
-  },
-  {
-    id: 2,
-    name: "Ada Lovelace",
-    number: "39-44-5323523",
-  },
-  {
-    id: 3,
-    name: "Dan Abramov",
-    number: "12-43-234345",
-  },
-  {
-    id: 4,
-    name: "Mary Poppendieck",
-    number: "39-23-6423122",
-  },
-];
+// let persons = [
+//   {
+//     id: 1,
+//     name: "Arto Hellas",
+//     number: "040-123456",
+//   },
+//   {
+//     id: 2,
+//     name: "Ada Lovelace",
+//     number: "39-44-5323523",
+//   },
+//   {
+//     id: 3,
+//     name: "Dan Abramov",
+//     number: "12-43-234345",
+//   },
+//   {
+//     id: 4,
+//     name: "Mary Poppendieck",
+//     number: "39-23-6423122",
+//   },
+// ];
 
-app.get(baseURL, (req, res) => res.json(persons));
+app.get(baseURL, (req, res) => {
+  Person.find({}).then((notes) => {
+    res.json(notes);
+  });
+});
 
 app.get(`${baseURL}/:id`, (req, res) => {
-  const id = Number(req.params.id);
-  const person = persons.find((person) => person.id === id);
-
-  person ? res.json(person) : res.status(404).end();
+  Person.findById(req.params.id).then((person) => res.json(person));
 });
 
-app.get("/info", (req, res) => {
-  const numOfPeople = persons.length;
-  const curTime = new Date().toString();
+// app.get("/info", (req, res) => {
+//   const numOfPeople = persons.length;
+//   const curTime = new Date().toString();
 
-  const htmlRes = `
-	<p>Phonebook has info for ${numOfPeople}</p>
-	<p>Current time is ${curTime}</p>
-	`;
+//   const htmlRes = `
+// 	<p>Phonebook has info for ${numOfPeople}</p>
+// 	<p>Current time is ${curTime}</p>
+// 	`;
 
-  res.send(htmlRes);
-});
+//   res.send(htmlRes);
+// });
 
 app.delete(`${baseURL}/:id`, (req, res) => {
-  const id = Number(req.params.id);
-  const prevLen = persons.length;
-  persons = persons.filter((person) => person.id !== id);
-
-  prevLen !== persons.length ? res.status(204).end() : res.status(404).end();
+  Person.findByIdAndRemove(req.params.id)
+    .then((result) => (result ? res.status(204).end : res.status(404).end()))
+    .catch((err) => {
+      console.log(err);
+      res.status(400).send({ error: "malformatted id" });
+    });
 });
 
 app.post(`${baseURL}`, (req, res) => {
@@ -89,23 +92,16 @@ app.post(`${baseURL}`, (req, res) => {
       error: `Missing required properties: ${missingProperties.join(", ")}`,
     });
 
-  if (persons.find((person) => person.name === body.name))
-    return res.status(400).json({ error: "name must be unique" });
-
-  const person = {
-    id: uuidv4(),
+  const person = new Person({
     name: body.name,
     number: body.number,
-  };
-
-  persons = persons.concat(person);
-  console.log(persons);
-  res.json(person);
+  });
+  person.save().then((savedPerson) => res.json(savedPerson));
 });
 
 app.use(unknownEndpoint);
 
-const PORT = process.env.PORT || 3001;
+const PORT = process.env.PORT;
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
